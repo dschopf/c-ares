@@ -4,6 +4,7 @@ TESTSOURCES = ares-test-main.cc	\
   ares-test-ns.cc			\
   ares-test-parse.cc			\
   ares-test-parse-a.cc			\
+  ares-test-parse-a-ex.cc		\
   ares-test-parse-aaaa.cc		\
   ares-test-parse-mx.cc		\
   ares-test-parse-naptr.cc		\

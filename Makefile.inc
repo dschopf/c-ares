@@ -30,6 +30,7 @@ CSOURCES = ares__close_sockets.c	\
   ares_nowarn.c				\
   ares_options.c			\
   ares_parse_a_reply.c			\
+  ares_parse_a_reply_ex.c		\
   ares_parse_aaaa_reply.c		\
   ares_parse_mx_reply.c			\
   ares_parse_naptr_reply.c		\

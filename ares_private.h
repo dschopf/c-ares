@@ -419,4 +419,16 @@ int ares__connect_socket(ares_channel channel,
 #include "../lib/memdebug.h"
 #endif
 
+/* internal struct for a reply */
+struct ares_a_reply {
+  char *name;
+  char **aliases;
+  int naliases;
+  int addrtype;
+  int length;
+  char **addr_list;
+  int naddr_list;
+  int *ttl;
+};
+
 #endif /* __ARES_PRIVATE_H */

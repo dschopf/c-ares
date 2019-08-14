@@ -619,6 +619,39 @@ struct ares_addrinfo_hints {
 };
 
 /*
+** NEW FUNCTION FOR PARSING USING OPAQUE POINTERS
+*/
+
+struct ares_a_reply;
+
+CARES_EXTERN int ares_parse_a_reply_ex(const unsigned char *abuf,
+                                       int alen,
+                                       struct ares_a_reply **reply);
+
+CARES_EXTERN const char* ares_a_reply_ex_get_name(struct ares_a_reply const *reply);
+CARES_EXTERN int ares_a_reply_ex_get_alias_count(struct ares_a_reply const *reply);
+CARES_EXTERN const char* ares_a_reply_ex_get_alias(struct ares_a_reply const *reply, int index);
+CARES_EXTERN int ares_a_reply_ex_get_addr_type(struct ares_a_reply const *reply);
+CARES_EXTERN int ares_a_reply_ex_get_length(struct ares_a_reply const *reply);
+CARES_EXTERN int ares_a_reply_ex_get_addr_count(struct ares_a_reply const *reply);
+CARES_EXTERN const char* ares_a_reply_ex_get_addr(struct ares_a_reply const *reply, int index);
+CARES_EXTERN int ares_a_reply_ex_get_ttl(struct ares_a_reply const *reply, int index);
+
+// /* internal struct for a reply */
+// struct ares_a_reply {
+//   char *name;
+//   char **aliases;
+//   int naliases;
+//   int addrtype;
+//   int length;
+//   char **addr_list;
+//   int naddr_list;
+//   int *ttl;
+// };
+
+CARES_EXTERN void ares_free_a_reply(struct ares_a_reply *reply);
+
+/*
 ** Parse the buffer, starting at *abuf and of length alen bytes, previously
 ** obtained from an ares_search call.  Put the results in *host, if nonnull.
 ** Also, if addrttls is nonnull, put up to *naddrttls IPv4 addresses along with
