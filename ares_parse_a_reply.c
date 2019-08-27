@@ -51,29 +51,22 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
                        struct hostent **host,
                        struct ares_addrttl *addrttls, int *naddrttls)
 {
-  struct ares_addrinfo ai;
-  struct ares_addrinfo_node *next;
-  struct ares_addrinfo_cname *next_cname;
-  char **aliases = NULL;
-  char *question_hostname = NULL;
   struct hostent *hostent = NULL;
   struct in_addr *addrs = NULL;
-  int naliases = 0, naddrs = 0, alias = 0, i;
-  int cname_ttl = INT_MAX;
+  int naliases = 0, naddrs = 0, naddrttls_size = 0, i;
+
   int status;
+  ares_a_reply *reply = NULL;
 
-  memset(&ai, 0, sizeof(ai));
+  if (naddrttls)
+    {
+      naddrttls_size = *naddrttls;
+      *naddrttls = 0;
+    }
 
-  status = ares__parse_into_addrinfo2(abuf, alen, &question_hostname, &ai);
+  status = ares_parse_a_reply_ex(abuf, alen, &reply);
   if (status != ARES_SUCCESS)
     {
-      ares_free(question_hostname);
-
-      if (naddrttls)
-        {
-          *naddrttls = 0;
-        }
-
       return status;
     }
 
@@ -83,105 +76,52 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
       goto enomem;
     }
 
-  next = ai.nodes;
-  while (next)
-    {
-      ++naddrs;
-      next = next->ai_next;
-    }
+  memset(hostent, 0, sizeof(struct hostent));
 
-  next_cname = ai.cnames;
-  while (next_cname)
-    {
-      if(next_cname->alias)
-        ++naliases;
-      next_cname = next_cname->next;
-    }
+  hostent->h_name = ares_strdup(ares_a_reply_ex_get_name(reply));
 
-  aliases = ares_malloc((naliases + 1) * sizeof(char *));
-  if (!aliases)
+  naliases = ares_a_reply_ex_get_alias_count(reply);
+  hostent->h_aliases = ares_malloc((naliases + 1) * sizeof(char *));
+  if (!hostent->h_aliases)
     {
       goto enomem;
     }
 
   if (naliases)
     {
-      next_cname = ai.cnames;
-      while (next_cname)
-        {
-          if(next_cname->alias)
-            aliases[alias++] = strdup(next_cname->alias);
-          if(next_cname->ttl < cname_ttl)
-            cname_ttl = next_cname->ttl;
-          next_cname = next_cname->next;
-        }
+      for (i = 0; i < naliases; ++i)
+      {
+        hostent->h_aliases[i] = ares_strdup(ares_a_reply_ex_get_alias(reply, i));
+      }
     }
+  hostent->h_aliases[naliases] = NULL;
 
-  aliases[alias] = NULL;
+  hostent->h_addrtype = ares_a_reply_ex_get_addr_type(reply);
+  hostent->h_length = ares_a_reply_ex_get_length(reply);
 
+  naddrs = ares_a_reply_ex_get_addr_count(reply);
   hostent->h_addr_list = ares_malloc((naddrs + 1) * sizeof(char *));
   if (!hostent->h_addr_list)
     {
       goto enomem;
     }
 
-  for (i = 0; i < naddrs + 1; ++i)
-    {
-      hostent->h_addr_list[i] = NULL;
-    }
-
-  if (ai.cnames)
-    {
-      hostent->h_name = strdup(ai.cnames->name);
-      ares_free(question_hostname);
-    }
-  else
-    {
-      hostent->h_name = question_hostname;
-    }
-
-  hostent->h_aliases = aliases;
-  hostent->h_addrtype = AF_INET;
-  hostent->h_length = sizeof(struct in_addr);
-
   if (naddrs)
     {
+
       addrs = ares_malloc(naddrs * sizeof(struct in_addr));
       if (!addrs)
         {
           goto enomem;
         }
 
-      i = 0;
-      next = ai.nodes;
-      while (next)
-        {
-          if (next->ai_family == AF_INET)
-            {
-              hostent->h_addr_list[i] = (char *)&addrs[i];
-              memcpy(hostent->h_addr_list[i],
-                     &(((struct sockaddr_in *)next->ai_addr)->sin_addr),
-                     sizeof(struct in_addr));
-              if (naddrttls && i < *naddrttls)
-                {
-                  if (next->ai_ttl > cname_ttl)
-                    addrttls[i].ttl = cname_ttl;
-                  else
-                    addrttls[i].ttl = next->ai_ttl;
-
-                  memcpy(&addrttls[i].ipaddr,
-                         &(((struct sockaddr_in *)next->ai_addr)->sin_addr),
-                         sizeof(struct in_addr));
-                }
-              ++i;
-            }
-          next = next->ai_next;
-        }
-      if (i == 0)
-        {
-          ares_free(addrs);
-        }
+      for (i = 0; i < naddrs; ++i)
+      {
+        hostent->h_addr_list[i] = (char *)&addrs[i];
+        memcpy(hostent->h_addr_list[i], ares_a_reply_ex_get_addr(reply, i), sizeof(struct in_addr));
+      }
     }
+  hostent->h_addr_list[naddrs] = NULL;
 
   if (host)
     {
@@ -192,20 +132,23 @@ int ares_parse_a_reply(const unsigned char *abuf, int alen,
       ares_free_hostent(hostent);
     }
 
-  if (naddrttls)
+  if (naddrttls_size)
     {
-      *naddrttls = naddrs;
+      for (i = 0; i < naddrs && i < naddrttls_size; ++i)
+        {
+          memcpy(&addrttls[i].ipaddr.s_addr, ares_a_reply_ex_get_addr(reply, i), ares_a_reply_ex_get_length(reply));
+          addrttls[i].ttl = ares_a_reply_ex_get_ttl(reply, i);
+        }
+
+      *naddrttls = i;
     }
 
-  ares__freeaddrinfo_cnames(ai.cnames);
-  ares__freeaddrinfo_nodes(ai.nodes);
+  ares_free_a_reply(reply);
+
   return ARES_SUCCESS;
 
 enomem:
-  ares_free(aliases);
+  ares_free_a_reply(reply);
   ares_free(hostent);
-  ares__freeaddrinfo_cnames(ai.cnames);
-  ares__freeaddrinfo_nodes(ai.nodes);
-  ares_free(question_hostname);
   return ARES_ENOMEM;
 }

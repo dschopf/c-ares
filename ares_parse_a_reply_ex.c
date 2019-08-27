@@ -48,14 +48,13 @@
 #include "ares_private.h"
 
 int ares_parse_a_reply_ex(const unsigned char *abuf, int alen,
-                          struct ares_a_reply **rep)
+                          ares_a_reply **rep)
 {
   struct ares_addrinfo ai;
   struct ares_addrinfo_node *next;
   struct ares_addrinfo_cname *next_cname;
-//   char **aliases = NULL;
   char *question_hostname = NULL;
-  struct ares_a_reply *reply = NULL;
+  ares_a_reply *reply = NULL;
   struct in_addr *addrs = NULL;
   int naliases = 0, naddrs = 0, alias = 0, i;
   int cname_ttl = INT_MAX;
@@ -92,13 +91,13 @@ int ares_parse_a_reply_ex(const unsigned char *abuf, int alen,
       next_cname = next_cname->next;
     }
 
-  reply = ares_malloc(sizeof(struct ares_a_reply));
+  reply = ares_malloc(sizeof(ares_a_reply));
   if (!reply)
     {
       goto enomem;
     }
 
-  memset(reply, 0, sizeof(struct ares_a_reply));
+  memset(reply, 0, sizeof(ares_a_reply));
 
   if (ai.cnames)
     {
@@ -150,6 +149,7 @@ int ares_parse_a_reply_ex(const unsigned char *abuf, int alen,
         {
           goto enomem;
         }
+      memset(reply->addr_list, 0, naddrs * sizeof(char *));
 
       reply->ttl = ares_malloc(naddrs * sizeof(int));
       if (!reply->ttl)
@@ -186,7 +186,7 @@ int ares_parse_a_reply_ex(const unsigned char *abuf, int alen,
           ares_free(addrs);
         }
 
-        reply->naddr_list = naddrs;
+        reply->naddr_list = i;
     }
 
   *rep = reply;
@@ -203,7 +203,7 @@ enomem:
   return ARES_ENOMEM;
 }
 
-const char* ares_a_reply_ex_get_name(struct ares_a_reply const *reply)
+const char* ares_a_reply_ex_get_name(ares_a_reply const *reply)
 {
   if (!reply)
     return NULL;
@@ -211,7 +211,7 @@ const char* ares_a_reply_ex_get_name(struct ares_a_reply const *reply)
   return reply->name;
 }
 
-int ares_a_reply_ex_get_alias_count(struct ares_a_reply const *reply)
+int ares_a_reply_ex_get_alias_count(ares_a_reply const *reply)
 {
   if (!reply)
     return 0;
@@ -219,7 +219,7 @@ int ares_a_reply_ex_get_alias_count(struct ares_a_reply const *reply)
   return reply->naliases;
 }
 
-const char* ares_a_reply_ex_get_alias(struct ares_a_reply const *reply, int index)
+const char* ares_a_reply_ex_get_alias(ares_a_reply const *reply, int index)
 {
   if (!reply || index < 0 || index >= reply->naliases)
     return NULL;
@@ -227,7 +227,7 @@ const char* ares_a_reply_ex_get_alias(struct ares_a_reply const *reply, int inde
   return reply->aliases[index];
 }
 
-int ares_a_reply_ex_get_addr_type(struct ares_a_reply const *reply)
+int ares_a_reply_ex_get_addr_type(ares_a_reply const *reply)
 {
   if (!reply)
     return 0;
@@ -235,7 +235,7 @@ int ares_a_reply_ex_get_addr_type(struct ares_a_reply const *reply)
   return reply->addrtype;
 }
 
-int ares_a_reply_ex_get_length(struct ares_a_reply const *reply)
+int ares_a_reply_ex_get_length(ares_a_reply const *reply)
 {
   if (!reply)
     return 0;
@@ -243,7 +243,7 @@ int ares_a_reply_ex_get_length(struct ares_a_reply const *reply)
   return reply->length;
 }
 
-int ares_a_reply_ex_get_addr_count(struct ares_a_reply const *reply)
+int ares_a_reply_ex_get_addr_count(ares_a_reply const *reply)
 {
   if (!reply)
     return 0;
@@ -251,7 +251,7 @@ int ares_a_reply_ex_get_addr_count(struct ares_a_reply const *reply)
   return reply->naddr_list;
 }
 
-const char* ares_a_reply_ex_get_addr(struct ares_a_reply const *reply, int index)
+const char* ares_a_reply_ex_get_addr(ares_a_reply const *reply, int index)
 {
   if (!reply || index < 0 || index >= reply->naddr_list)
     return NULL;
@@ -259,7 +259,7 @@ const char* ares_a_reply_ex_get_addr(struct ares_a_reply const *reply, int index
   return reply->addr_list[index];
 }
 
-int ares_a_reply_ex_get_ttl(struct ares_a_reply const *reply, int index)
+int ares_a_reply_ex_get_ttl(ares_a_reply const *reply, int index)
 {
   if (!reply || index < 0 || index >= reply->naddr_list)
     return 0;
@@ -267,18 +267,18 @@ int ares_a_reply_ex_get_ttl(struct ares_a_reply const *reply, int index)
   return reply->ttl[index];
 }
 
-void ares_free_a_reply(struct ares_a_reply* reply)
+void ares_free_a_reply(ares_a_reply* reply)
 {
   int i = 0;
 
   if (!reply)
     return;
 
-  ares_free((reply->name));
+  ares_free(reply->name);
   for (i = 0; i < reply->naliases; ++i)
     ares_free(reply->aliases[i]);
   ares_free(reply->aliases);
-  if (reply->addr_list)
+  if (reply->addr_list && reply->addr_list[0])
     ares_free(reply->addr_list[0]); /* no matter if there is one or many entries,
                                  there is only one malloc for all of them */
   ares_free(reply->addr_list);

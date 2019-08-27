@@ -12,6 +12,10 @@ int LLVMFuzzerTestOneInput(const unsigned char *data,
   ares_parse_a_reply(data, size, &host, info, &count);
   if (host) ares_free_hostent(host);
 
+  ares_a_reply *reply = NULL;
+  ares_parse_a_reply_ex(data, size, &reply);
+  if (reply) ares_free_a_reply(reply);
+
   host = NULL;
   struct ares_addr6ttl info6[5];
   count = 5;

@@ -622,20 +622,20 @@ struct ares_addrinfo_hints {
 ** NEW FUNCTION FOR PARSING USING OPAQUE POINTERS
 */
 
-struct ares_a_reply;
+typedef struct ares_a_reply ares_a_reply;
 
 CARES_EXTERN int ares_parse_a_reply_ex(const unsigned char *abuf,
                                        int alen,
-                                       struct ares_a_reply **reply);
+                                       ares_a_reply **reply);
 
-CARES_EXTERN const char* ares_a_reply_ex_get_name(struct ares_a_reply const *reply);
-CARES_EXTERN int ares_a_reply_ex_get_alias_count(struct ares_a_reply const *reply);
-CARES_EXTERN const char* ares_a_reply_ex_get_alias(struct ares_a_reply const *reply, int index);
-CARES_EXTERN int ares_a_reply_ex_get_addr_type(struct ares_a_reply const *reply);
-CARES_EXTERN int ares_a_reply_ex_get_length(struct ares_a_reply const *reply);
-CARES_EXTERN int ares_a_reply_ex_get_addr_count(struct ares_a_reply const *reply);
-CARES_EXTERN const char* ares_a_reply_ex_get_addr(struct ares_a_reply const *reply, int index);
-CARES_EXTERN int ares_a_reply_ex_get_ttl(struct ares_a_reply const *reply, int index);
+CARES_EXTERN const char* ares_a_reply_ex_get_name(ares_a_reply const *reply);
+CARES_EXTERN int ares_a_reply_ex_get_alias_count(ares_a_reply const *reply);
+CARES_EXTERN const char* ares_a_reply_ex_get_alias(ares_a_reply const *reply, int index);
+CARES_EXTERN int ares_a_reply_ex_get_addr_type(ares_a_reply const *reply);
+CARES_EXTERN int ares_a_reply_ex_get_length(ares_a_reply const *reply);
+CARES_EXTERN int ares_a_reply_ex_get_addr_count(ares_a_reply const *reply);
+CARES_EXTERN const char* ares_a_reply_ex_get_addr(ares_a_reply const *reply, int index);
+CARES_EXTERN int ares_a_reply_ex_get_ttl(ares_a_reply const *reply, int index);
 
 // /* internal struct for a reply */
 // struct ares_a_reply {
@@ -649,7 +649,7 @@ CARES_EXTERN int ares_a_reply_ex_get_ttl(struct ares_a_reply const *reply, int i
 //   int *ttl;
 // };
 
-CARES_EXTERN void ares_free_a_reply(struct ares_a_reply *reply);
+CARES_EXTERN void ares_free_a_reply(ares_a_reply *reply);
 
 /*
 ** Parse the buffer, starting at *abuf and of length alen bytes, previously
